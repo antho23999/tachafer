@@ -1,0 +1,2150 @@
+<!DOCTYPE html>
+<!--
+  ╔══════════════════════════════════════════════════════════════════╗
+  ║                        TACHAFAIRE                                ║
+  ║          Organisateur de journée pour enseignants                ║
+  ╠══════════════════════════════════════════════════════════════════╣
+  ║  Auteur   : Anthony                                              ║
+  ║  Licence  : GPL (GNU General Public License)                     ║
+  ║  Dépôt    : https://forge.apps.education.fr/Anthony/tachafaire   ║
+  ║  Tickets  : https://forge.apps.education.fr/Anthony/tachafaire   ║
+  ║             /-/issues                                            ║
+  ╠══════════════════════════════════════════════════════════════════╣
+  ║  Ce fichier est un fichier HTML autonome (self-contained).       ║
+  ║  Il contient le HTML, le CSS et le JavaScript en un seul         ║
+  ║  fichier. Aucun serveur n'est requis. Les données sont           ║
+  ║  sauvegardées dans le localStorage du navigateur.                ║
+  ╚══════════════════════════════════════════════════════════════════╝
+-->
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <!--
+    La balise viewport est INDISPENSABLE pour le responsive sur mobile.
+    width=device-width : utilise la largeur réelle de l'écran
+    initial-scale=1.0  : pas de zoom initial
+  -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Tachafaire – Organisateur de journée pour enseignants" />
+  <title>Tachafaire</title>
+
+  <style>
+    /*
+    ══════════════════════════════════════════════════════════
+      VARIABLES CSS — THÈME VINTAGE
+      Pour personnaliser l'apparence, modifiez ces variables.
+      Elles sont utilisées partout dans le CSS ci-dessous.
+    ══════════════════════════════════════════════════════════
+
+    POUR CHANGER LES COULEURS PRINCIPALES :
+      → Modifiez --couleur-fond-page, --couleur-fond-entete, etc.
+
+    POUR CHANGER LES POLICES :
+      → Modifiez --police-titre et --police-corps
+      → N'utilisez que des polices système (pas Google Fonts) pour
+        respecter le RGPD.
+
+    POUR CHANGER LA TAILLE DES CRÉNEAUX :
+      → Modifiez --hauteur-creneau (en pixels)
+    */
+    :root {
+      /* ── Palette vintage ── */
+      --couleur-fond-page         : #f5f0e8;   /* Fond général ivoire/parchemin */
+      --couleur-fond-entete       : #3b2a1a;   /* En-tête brun foncé */
+      --couleur-fond-piedpage     : #3b2a1a;   /* Pied de page brun foncé */
+      --couleur-fond-navigation   : #5c3d1e;   /* Barre de navigation marron */
+      --couleur-fond-colonne-heure: #e8dcc8;   /* Fond colonne des heures */
+      --couleur-fond-planning     : #faf6ee;   /* Fond zone de planification */
+      --couleur-fond-calendrier   : #fff8f0;   /* Fond modal calendrier */
+      --couleur-fond-modal        : #faf6ee;   /* Fond modal saisie tâche */
+      --couleur-accent             : #8b4513;  /* Brun selle — accent principal */
+      --couleur-accent-clair       : #c68642;  /* Brun clair — survol, hover */
+      --couleur-accent-tres-clair  : #e8c99a;  /* Beige doré — sélection */
+      --couleur-texte-principal    : #2c1a0e;  /* Texte sombre */
+      --couleur-texte-secondaire   : #6b4226;  /* Texte secondaire brun */
+      --couleur-texte-clair        : #f5f0e8;  /* Texte sur fond sombre */
+      --couleur-bordure            : #c4a882;  /* Bordures beige */
+      --couleur-bordure-forte      : #8b6347;  /* Bordures marquées */
+      --couleur-heure-impaire      : #ede4d4;  /* Alternance lignes heures */
+      --couleur-survol-creneau     : rgba(139, 69, 19, 0.15); /* Survol créneau */
+      --couleur-selection-creneau  : rgba(139, 69, 19, 0.30); /* Sélection créneau */
+      --couleur-danger             : #8b1a1a;  /* Rouge vintage pour suppression */
+      --couleur-danger-clair       : #c44;     /* Survol bouton danger */
+
+      /* ── Typographie système (sans appel réseau, RGPD compliant) ──
+         POLICES ALTERNATIVES (système) :
+         Serif   : Georgia, "Times New Roman", Palatino Linotype
+         Sans    : "Trebuchet MS", Verdana, Tahoma
+         Mono    : "Courier New", Courier
+      */
+      --police-titre  : Georgia, "Times New Roman", Palatino, serif;
+      --police-corps  : "Trebuchet MS", Verdana, Tahoma, sans-serif;
+
+      /* ── Dimensions ──
+         POUR MODIFIER LA HAUTEUR DES CRÉNEAUX → changer --hauteur-creneau
+         Valeur recommandée : entre 28px et 50px
+      */
+      --hauteur-creneau       : 36px;   /* Hauteur d'un créneau de 30 min */
+      --largeur-colonne-heure : 70px;   /* Largeur de la colonne des heures */
+      --rayon-bordure         : 6px;    /* Arrondi des coins */
+      --ombre-douce           : 0 2px 8px rgba(59, 42, 26, 0.18);
+      --ombre-forte           : 0 4px 16px rgba(59, 42, 26, 0.30);
+
+      /* ── Transitions ── */
+      --transition-rapide : 0.15s ease;
+      --transition-douce  : 0.25s ease;
+    }
+
+    /*
+    ══════════════════════════════════════════════════════════
+      RESET & BASE
+      Normalise le comportement entre navigateurs
+    ══════════════════════════════════════════════════════════
+    */
+    *, *::before, *::after {
+      box-sizing: border-box;   /* Inclut padding et border dans la largeur */
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      font-size: 16px;           /* Base de calcul pour les rem */
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family : var(--police-corps);
+      background  : var(--couleur-fond-page);
+      color       : var(--couleur-texte-principal);
+      min-height  : 100vh;
+      display     : flex;
+      flex-direction: column;
+      /* Texture papier vintage via motif SVG en data URI */
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='%23f5f0e8'/%3E%3Ccircle cx='1' cy='1' r='0.4' fill='%23c4a882' opacity='0.18'/%3E%3Ccircle cx='3' cy='3' r='0.4' fill='%23c4a882' opacity='0.18'/%3E%3C/svg%3E");
+    }
+
+    /*
+    ══════════════════════════════════════════════════════════
+      EN-TÊTE (HEADER)
+    ══════════════════════════════════════════════════════════
+    */
+    #entete {
+      background  : var(--couleur-fond-entete);
+      color       : var(--couleur-texte-clair);
+      text-align  : center;
+      padding     : 0.9rem 1rem 0.7rem;
+      border-bottom: 3px solid var(--couleur-accent-clair);
+      /* Motif de bordure décoratif vintage */
+      box-shadow  : var(--ombre-forte);
+    }
+
+    #titre-application {
+      font-family  : var(--police-titre);
+      font-size    : 2rem;         /* POUR CHANGER LA TAILLE DU TITRE → modifier ici */
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color        : var(--couleur-accent-tres-clair);
+      text-shadow  : 1px 1px 3px rgba(0,0,0,0.5);
+    }
+
+    #sous-titre {
+      font-size  : 0.8rem;
+      color      : var(--couleur-bordure);
+      font-style : italic;
+      margin-top : 0.2rem;
+      letter-spacing: 0.05em;
+    }
+
+    /* Ligne décorative vintage sous le titre */
+    #entete::after {
+      content    : '';
+      display    : block;
+      width      : 60px;
+      height     : 2px;
+      background : var(--couleur-accent-clair);
+      margin     : 0.4rem auto 0;
+    }
+
+    /*
+    ══════════════════════════════════════════════════════════
+      BARRE DE NAVIGATION (date + boutons)
+    ══════════════════════════════════════════════════════════
+    */
+    #barre-navigation {
+      background   : var(--couleur-fond-navigation);
+      display      : flex;
+      align-items  : center;
+      justify-content: center;
+      gap          : 0.75rem;
+      padding      : 0.6rem 1rem;
+      border-bottom: 2px solid var(--couleur-bordure-forte);
+      flex-wrap    : wrap;     /* Passe à la ligne sur petit écran */
+    }
+
+    /* Boutons flèche gauche/droite et calendrier */
+    .bouton-navigation {
+      background   : transparent;
+      border       : 2px solid var(--couleur-accent-clair);
+      color        : var(--couleur-texte-clair);
+      font-size    : 1.1rem;
+      width        : 34px;
+      height       : 34px;
+      border-radius: 50%;
+      cursor       : pointer;
+      transition   : background var(--transition-rapide),
+                     transform  var(--transition-rapide);
+      display      : flex;
+      align-items  : center;
+      justify-content: center;
+      /* Police titre pour les flèches décoratives */
+      font-family  : var(--police-titre);
+    }
+
+    .bouton-navigation:hover {
+      background : var(--couleur-accent);
+      transform  : scale(1.1);
+    }
+
+    #affichage-date {
+      font-family  : var(--police-titre);
+      font-size    : 1.15rem;
+      color        : var(--couleur-texte-clair);
+      letter-spacing: 0.05em;
+      min-width    : 220px;        /* Évite les sauts de layout au changement de date */
+      text-align   : center;
+      text-transform: capitalize; /* Première lettre du jour en majuscule */
+    }
+
+    #bouton-calendrier {
+      background   : var(--couleur-accent);
+      border       : 2px solid var(--couleur-accent-clair);
+      color        : var(--couleur-texte-clair);
+      font-size    : 0.8rem;
+      padding      : 0.3rem 0.75rem;
+      border-radius: var(--rayon-bordure);
+      cursor       : pointer;
+      font-family  : var(--police-corps);
+      transition   : background var(--transition-rapide);
+      letter-spacing: 0.03em;
+    }
+
+    #bouton-calendrier:hover {
+      background : var(--couleur-accent-clair);
+    }
+
+    /* Bouton effacer tout */
+    #bouton-effacer-tout {
+      background   : transparent;
+      border       : 2px solid var(--couleur-danger);
+      color        : #ffb3b3;
+      font-size    : 0.78rem;
+      padding      : 0.3rem 0.65rem;
+      border-radius: var(--rayon-bordure);
+      cursor       : pointer;
+      font-family  : var(--police-corps);
+      transition   : background var(--transition-rapide),
+                     color      var(--transition-rapide);
+    }
+
+    #bouton-effacer-tout:hover {
+      background : var(--couleur-danger);
+      color      : #fff;
+    }
+
+    /*
+    ══════════════════════════════════════════════════════════
+      CONTENU PRINCIPAL — Grille 2 colonnes
+    ══════════════════════════════════════════════════════════
+    */
+    #contenu-principal {
+      flex        : 1;             /* Prend l'espace disponible entre header et footer */
+      overflow-x  : auto;          /* Scroll horizontal si nécessaire sur mobile */
+      padding     : 0.75rem;
+    }
+
+    /*
+    STRUCTURE DE LA GRILLE :
+      ┌──────────────────────────────────────────────────────┐
+      │  #grille-planning                                     │
+      │  ┌──────────────┬──────────────────────────────────┐ │
+      │  │ .colonne-heure│ #zone-planning                  │ │
+      │  │  (fixe)       │  (flexible)                     │ │
+      │  └──────────────┴──────────────────────────────────┘ │
+      └──────────────────────────────────────────────────────┘
+    */
+    #grille-planning {
+      display       : flex;
+      align-items   : stretch;
+      border        : 2px solid var(--couleur-bordure-forte);
+      border-radius : var(--rayon-bordure);
+      overflow      : hidden;
+      box-shadow    : var(--ombre-douce);
+      background    : var(--couleur-fond-planning);
+      min-width     : 300px;      /* Largeur minimale avant scroll */
+    }
+
+    /* Colonne gauche : heures */
+    #colonne-heures {
+      width         : var(--largeur-colonne-heure);
+      min-width     : var(--largeur-colonne-heure);
+      background    : var(--couleur-fond-colonne-heure);
+      border-right  : 2px solid var(--couleur-bordure-forte);
+      position      : relative;
+    }
+
+    /* Chaque cellule heure */
+    .cellule-heure {
+      height        : var(--hauteur-creneau);
+      display       : flex;
+      align-items   : center;
+      justify-content: flex-end;
+      padding-right : 8px;
+      font-family   : var(--police-titre);
+      font-size     : 0.72rem;
+      color         : var(--couleur-texte-secondaire);
+      border-bottom : 1px solid var(--couleur-bordure);
+      user-select   : none;      /* Empêche la sélection de texte lors du drag */
+    }
+
+    /* Alternance de couleur pour les heures pleines (hh:00) */
+    .cellule-heure.heure-pleine {
+      background    : var(--couleur-fond-colonne-heure);
+      font-weight   : bold;
+      font-size     : 0.78rem;
+      color         : var(--couleur-accent);
+      border-bottom : 1px solid var(--couleur-bordure-forte);
+    }
+
+    .cellule-heure.heure-demie {
+      background    : var(--couleur-heure-impaire);
+      font-size     : 0.65rem;
+      color         : var(--couleur-texte-secondaire);
+    }
+
+    /* Colonne droite : zone de planification */
+    #zone-planning {
+      flex          : 1;
+      position      : relative;   /* Nécessaire pour le positionnement absolu des tâches */
+      min-width     : 0;          /* Évite le débordement en flexbox */
+    }
+
+    /* Chaque créneau de 30 min dans la zone planning */
+    .creneau {
+      height        : var(--hauteur-creneau);
+      border-bottom : 1px solid var(--couleur-bordure);
+      cursor        : pointer;
+      transition    : background var(--transition-rapide);
+      position      : relative;
+      user-select   : none;
+    }
+
+    /* Bordure plus marquée pour les heures pleines */
+    .creneau.heure-pleine {
+      border-bottom : 1px solid var(--couleur-bordure-forte);
+    }
+
+    .creneau:hover {
+      background    : var(--couleur-survol-creneau);
+    }
+
+    /* Créneau en cours de sélection (drag ou clic début) */
+    .creneau.en-selection {
+      background    : var(--couleur-selection-creneau);
+    }
+
+    /*
+    ══════════════════════════════════════════════════════════
+      BLOCS DE TÂCHES (affichés sur le planning)
+    ══════════════════════════════════════════════════════════
+    */
+    .bloc-tache {
+      position      : absolute;
+      left          : 2px;
+      right         : 2px;
+      border-radius : 4px;
+      padding       : 3px 26px 3px 6px; /* droite : espace pour le bouton suppr */
+      font-size     : 0.78rem;
+      font-family   : var(--police-corps);
+      overflow      : hidden;
+      border-left   : 4px solid rgba(0,0,0,0.25);
+      box-shadow    : 0 1px 4px rgba(0,0,0,0.15);
+      cursor        : pointer;
+      transition    : opacity var(--transition-rapide),
+                      box-shadow var(--transition-rapide);
+      z-index       : 10;         /* Au-dessus des créneaux */
+      line-height   : 1.3;
+      word-break    : break-word;
+    }
+
+    .bloc-tache:hover {
+      opacity       : 0.9;
+      box-shadow    : 0 2px 8px rgba(0,0,0,0.25);
+    }
+
+    /* Bouton de suppression individuelle d'une tâche */
+    .bouton-suppr-tache {
+      position      : absolute;
+      top           : 2px;
+      right         : 3px;
+      background    : rgba(0,0,0,0.25);
+      border        : none;
+      color         : #fff;
+      font-size     : 0.7rem;
+      width         : 18px;
+      height        : 18px;
+      border-radius : 50%;
+      cursor        : pointer;
+      display       : flex;
+      align-items   : center;
+      justify-content: center;
+      transition    : background var(--transition-rapide);
+      line-height   : 1;
+    }
+
+    .bouton-suppr-tache:hover {
+      background    : rgba(139, 26, 26, 0.8);
+    }
+
+    /* Texte du titre de la tâche */
+    .titre-tache {
+      font-weight   : bold;
+      display       : block;
+    }
+
+    /* Durée affichée sous le titre */
+    .duree-tache {
+      font-size     : 0.68rem;
+      opacity       : 0.8;
+    }
+
+    /*
+    ══════════════════════════════════════════════════════════
+      MODALES (fenêtres superposées)
+    ══════════════════════════════════════════════════════════
+    */
+    .fond-modal {
+      position      : fixed;
+      inset         : 0;             /* top/right/bottom/left = 0 */
+      background    : rgba(44, 26, 14, 0.55);
+      z-index       : 100;
+      display       : flex;
+      align-items   : center;
+      justify-content: center;
+      padding       : 1rem;
+      /* Animation d'apparition */
+      animation     : fondu-entree 0.2s ease;
+    }
+
+    /* Masquer les modales par défaut */
+    .fond-modal.cache {
+      display       : none;
+    }
+
+    @keyframes fondu-entree {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    .contenu-modal {
+      background    : var(--couleur-fond-modal);
+      border        : 2px solid var(--couleur-bordure-forte);
+      border-radius : var(--rayon-bordure);
+      padding       : 1.5rem;
+      max-width     : 420px;
+      width         : 100%;
+      box-shadow    : var(--ombre-forte);
+      position      : relative;
+      /* Animation glissement vers le haut */
+      animation     : glissement-haut 0.2s ease;
+    }
+
+    @keyframes glissement-haut {
+      from { transform: translateY(20px); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+
+    .titre-modal {
+      font-family   : var(--police-titre);
+      font-size     : 1.1rem;
+      color         : var(--couleur-accent);
+      margin-bottom : 1rem;
+      border-bottom : 1px solid var(--couleur-bordure);
+      padding-bottom: 0.5rem;
+    }
+
+    /* Bouton fermeture × en haut à droite */
+    .bouton-fermer-modal {
+      position      : absolute;
+      top           : 0.75rem;
+      right         : 0.75rem;
+      background    : none;
+      border        : none;
+      font-size     : 1.2rem;
+      cursor        : pointer;
+      color         : var(--couleur-texte-secondaire);
+      line-height   : 1;
+      padding       : 0.1rem 0.3rem;
+      border-radius : 3px;
+      transition    : background var(--transition-rapide);
+    }
+
+    .bouton-fermer-modal:hover {
+      background    : var(--couleur-bordure);
+    }
+
+    /* ── Formulaire de saisie de tâche ── */
+    .groupe-champ {
+      margin-bottom : 0.9rem;
+    }
+
+    .etiquette-champ {
+      display       : block;
+      font-size     : 0.82rem;
+      color         : var(--couleur-texte-secondaire);
+      margin-bottom : 0.25rem;
+      font-family   : var(--police-titre);
+    }
+
+    .champ-saisie {
+      width         : 100%;
+      padding       : 0.45rem 0.6rem;
+      border        : 1px solid var(--couleur-bordure-forte);
+      border-radius : var(--rayon-bordure);
+      background    : #fff;
+      font-family   : var(--police-corps);
+      font-size     : 0.9rem;
+      color         : var(--couleur-texte-principal);
+      transition    : border-color var(--transition-rapide);
+    }
+
+    .champ-saisie:focus {
+      outline       : none;
+      border-color  : var(--couleur-accent);
+      box-shadow    : 0 0 0 2px rgba(139,69,19,0.15);
+    }
+
+    /* Sélecteur de couleur de tâche */
+    #grille-couleurs {
+      display       : flex;
+      flex-wrap     : wrap;
+      gap           : 0.4rem;
+      margin-top    : 0.3rem;
+    }
+
+    .pastille-couleur {
+      width         : 28px;
+      height        : 28px;
+      border-radius : 50%;
+      border        : 2px solid transparent;
+      cursor        : pointer;
+      transition    : transform var(--transition-rapide),
+                      border-color var(--transition-rapide);
+    }
+
+    .pastille-couleur:hover {
+      transform     : scale(1.15);
+    }
+
+    .pastille-couleur.selectionnee {
+      border-color  : var(--couleur-texte-principal);
+      transform     : scale(1.15);
+      box-shadow    : 0 0 0 2px rgba(255,255,255,0.8);
+    }
+
+    /* Récapitulatif de l'horaire choisi */
+    #recapitulatif-horaire {
+      font-size     : 0.82rem;
+      color         : var(--couleur-accent);
+      font-family   : var(--police-titre);
+      font-style    : italic;
+      min-height    : 1.2em;
+      margin-bottom : 0.5rem;
+    }
+
+    /* Boutons du formulaire */
+    .groupe-boutons {
+      display       : flex;
+      gap           : 0.5rem;
+      justify-content: flex-end;
+      margin-top    : 1rem;
+    }
+
+    .bouton-annuler {
+      background    : transparent;
+      border        : 1px solid var(--couleur-bordure-forte);
+      color         : var(--couleur-texte-secondaire);
+      padding       : 0.4rem 0.9rem;
+      border-radius : var(--rayon-bordure);
+      cursor        : pointer;
+      font-family   : var(--police-corps);
+      font-size     : 0.85rem;
+      transition    : background var(--transition-rapide);
+    }
+
+    .bouton-annuler:hover {
+      background    : var(--couleur-bordure);
+    }
+
+    .bouton-valider {
+      background    : var(--couleur-accent);
+      border        : 1px solid var(--couleur-accent-clair);
+      color         : #fff;
+      padding       : 0.4rem 0.9rem;
+      border-radius : var(--rayon-bordure);
+      cursor        : pointer;
+      font-family   : var(--police-corps);
+      font-size     : 0.85rem;
+      transition    : background var(--transition-rapide);
+    }
+
+    .bouton-valider:hover {
+      background    : var(--couleur-accent-clair);
+    }
+
+    /*
+    ══════════════════════════════════════════════════════════
+      MODAL CALENDRIER
+    ══════════════════════════════════════════════════════════
+    */
+    #modal-calendrier .contenu-modal {
+      max-width     : 340px;
+      background    : var(--couleur-fond-calendrier);
+    }
+
+    /* Navigation du calendrier */
+    #nav-calendrier {
+      display       : flex;
+      align-items   : center;
+      justify-content: space-between;
+      margin-bottom : 0.75rem;
+    }
+
+    #mois-annee-calendrier {
+      font-family   : var(--police-titre);
+      font-size     : 1rem;
+      color         : var(--couleur-accent);
+      text-transform: capitalize;
+    }
+
+    /* Grille des jours du calendrier */
+    #grille-jours-calendrier {
+      display       : grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap           : 3px;
+    }
+
+    .entete-jour-semaine {
+      text-align    : center;
+      font-size     : 0.7rem;
+      color         : var(--couleur-texte-secondaire);
+      font-family   : var(--police-titre);
+      font-weight   : bold;
+      padding       : 0.2rem 0;
+    }
+
+    .cellule-calendrier {
+      text-align    : center;
+      padding       : 0.3rem 0;
+      font-size     : 0.82rem;
+      border-radius : 3px;
+      cursor        : pointer;
+      transition    : background var(--transition-rapide);
+      color         : var(--couleur-texte-principal);
+    }
+
+    .cellule-calendrier:hover {
+      background    : var(--couleur-accent-tres-clair);
+    }
+
+    .cellule-calendrier.vide {
+      cursor        : default;  /* Cellules vides en début de mois */
+    }
+
+    .cellule-calendrier.vide:hover {
+      background    : transparent;
+    }
+
+    .cellule-calendrier.aujourd-hui {
+      background    : var(--couleur-accent-tres-clair);
+      font-weight   : bold;
+    }
+
+    .cellule-calendrier.jour-selectionne {
+      background    : var(--couleur-accent);
+      color         : #fff;
+      font-weight   : bold;
+    }
+
+    /*
+    ══════════════════════════════════════════════════════════
+      PIED DE PAGE (FOOTER)
+    ══════════════════════════════════════════════════════════
+    */
+    #pied-page {
+      background    : var(--couleur-fond-piedpage);
+      color         : var(--couleur-bordure);
+      text-align    : center;
+      padding       : 0.6rem 1rem;
+      font-size     : 0.72rem;
+      border-top    : 2px solid var(--couleur-bordure-forte);
+      line-height   : 1.7;
+    }
+
+    #pied-page a {
+      color         : var(--couleur-accent-clair);
+      text-decoration: none;
+      transition    : color var(--transition-rapide);
+    }
+
+    #pied-page a:hover {
+      color         : var(--couleur-accent-tres-clair);
+      text-decoration: underline;
+    }
+
+    /*
+    ══════════════════════════════════════════════════════════
+      TOAST (notification légère)
+    ══════════════════════════════════════════════════════════
+    */
+    #zone-toast {
+      position      : fixed;
+      bottom        : 1rem;
+      left          : 50%;
+      transform     : translateX(-50%);
+      z-index       : 200;
+      pointer-events: none;  /* Ne bloque pas les clics */
+    }
+
+    .toast {
+      background    : var(--couleur-fond-entete);
+      color         : var(--couleur-texte-clair);
+      padding       : 0.5rem 1.2rem;
+      border-radius : 20px;
+      font-size     : 0.83rem;
+      box-shadow    : var(--ombre-forte);
+      margin-top    : 0.4rem;
+      animation     : toast-entree 0.3s ease, toast-sortie 0.3s ease 2.2s forwards;
+      border        : 1px solid var(--couleur-accent-clair);
+    }
+
+    @keyframes toast-entree {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes toast-sortie {
+      from { opacity: 1; }
+      to   { opacity: 0; }
+    }
+
+    /*
+    ══════════════════════════════════════════════════════════
+      RESPONSIVE — ADAPTATIONS MOBILE
+      POUR MODIFIER LE BREAKPOINT MOBILE → changer 600px
+    ══════════════════════════════════════════════════════════
+    */
+    @media (max-width: 600px) {
+      /* Titre plus petit sur mobile */
+      #titre-application {
+        font-size   : 1.4rem;
+      }
+
+      /* Date sur sa propre ligne */
+      #affichage-date {
+        font-size   : 1rem;
+        min-width   : 180px;
+      }
+
+      /* Colonne heures plus fine */
+      :root {
+        --largeur-colonne-heure : 55px;
+        --hauteur-creneau       : 32px;  /* Créneaux légèrement plus petits */
+      }
+
+      /* Contenu sans padding latéral */
+      #contenu-principal {
+        padding     : 0.4rem;
+      }
+
+      .contenu-modal {
+        padding     : 1rem;
+      }
+
+      /* Boutons navigation plus petits */
+      .bouton-navigation {
+        width       : 28px;
+        height      : 28px;
+        font-size   : 0.9rem;
+      }
+    }
+
+    /* Très petits écrans */
+    @media (max-width: 380px) {
+      :root {
+        --largeur-colonne-heure : 48px;
+      }
+      #titre-application {
+        font-size   : 1.2rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ══════════════════════════════════════════════════
+       EN-TÊTE
+  ══════════════════════════════════════════════════ -->
+  <header id="entete" role="banner">
+    <h1 id="titre-application">Tachafaire</h1>
+    <p id="sous-titre">Organisateur de journée pour enseignants</p>
+  </header>
+
+  <!-- ══════════════════════════════════════════════════
+       BARRE DE NAVIGATION (date + flèches + calendrier)
+  ══════════════════════════════════════════════════ -->
+  <nav id="barre-navigation" role="navigation" aria-label="Navigation entre les jours">
+    <!-- Flèche jour précédent -->
+    <button
+      id="bouton-jour-precedent"
+      class="bouton-navigation"
+      title="Jour précédent"
+      aria-label="Aller au jour précédent"
+    >&#9664;</button>
+
+    <!-- Affichage de la date courante -->
+    <span id="affichage-date" aria-live="polite">…</span>
+
+    <!-- Flèche jour suivant -->
+    <button
+      id="bouton-jour-suivant"
+      class="bouton-navigation"
+      title="Jour suivant"
+      aria-label="Aller au jour suivant"
+    >&#9654;</button>
+
+    <!-- Bouton ouvrir calendrier -->
+    <button
+      id="bouton-calendrier"
+      title="Ouvrir le calendrier"
+      aria-label="Ouvrir le calendrier"
+    >📅 Calendrier</button>
+
+    <!-- Bouton effacer toutes les tâches de la journée -->
+    <button
+      id="bouton-effacer-tout"
+      title="Effacer toutes les tâches de cette journée"
+      aria-label="Effacer toutes les tâches de cette journée"
+    >🗑 Effacer tout</button>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════════
+       CONTENU PRINCIPAL — Grille planning
+  ══════════════════════════════════════════════════ -->
+  <main id="contenu-principal" role="main">
+    <div id="grille-planning" role="grid" aria-label="Planning de la journée">
+
+      <!-- Colonne gauche : heures -->
+      <div id="colonne-heures" role="rowgroup" aria-label="Heures de la journée">
+        <!-- Généré dynamiquement par JavaScript -->
+      </div>
+
+      <!-- Colonne droite : zone cliquable pour les tâches -->
+      <div
+        id="zone-planning"
+        role="rowgroup"
+        aria-label="Zone de planification des tâches"
+      >
+        <!-- Créneaux et blocs de tâches générés dynamiquement -->
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ══════════════════════════════════════════════════
+       MODAL — Saisie d'une tâche
+  ══════════════════════════════════════════════════ -->
+  <div
+    id="modal-tache"
+    class="fond-modal cache"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="titre-modal-tache"
+  >
+    <div class="contenu-modal">
+      <button class="bouton-fermer-modal" id="bouton-fermer-modal-tache" aria-label="Fermer">×</button>
+      <h2 class="titre-modal" id="titre-modal-tache">Nouvelle tâche</h2>
+
+      <!-- Récapitulatif de l'horaire sélectionné -->
+      <p id="recapitulatif-horaire">–</p>
+
+      <!-- Champ titre de la tâche -->
+      <div class="groupe-champ">
+        <label class="etiquette-champ" for="champ-titre-tache">Titre de la tâche</label>
+        <input
+          type="text"
+          id="champ-titre-tache"
+          class="champ-saisie"
+          placeholder="Ex : Correction de copies, Réunion..."
+          maxlength="120"
+          autocomplete="off"
+        />
+      </div>
+
+      <!-- Sélection de la couleur -->
+      <div class="groupe-champ">
+        <span class="etiquette-champ">Couleur</span>
+        <div id="grille-couleurs">
+          <!-- Pastilles générées dynamiquement -->
+        </div>
+      </div>
+
+      <!-- Boutons Annuler / Enregistrer -->
+      <div class="groupe-boutons">
+        <button class="bouton-annuler" id="bouton-annuler-tache">Annuler</button>
+        <button class="bouton-valider" id="bouton-valider-tache">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       MODAL — Calendrier
+  ══════════════════════════════════════════════════ -->
+  <div
+    id="modal-calendrier"
+    class="fond-modal cache"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="titre-modal-calendrier"
+  >
+    <div class="contenu-modal">
+      <button class="bouton-fermer-modal" id="bouton-fermer-modal-calendrier" aria-label="Fermer">×</button>
+      <h2 class="titre-modal" id="titre-modal-calendrier">Choisir une date</h2>
+
+      <!-- Navigation mois précédent / suivant -->
+      <div id="nav-calendrier">
+        <button id="bouton-mois-precedent" class="bouton-navigation" aria-label="Mois précédent">&#9664;</button>
+        <span id="mois-annee-calendrier">–</span>
+        <button id="bouton-mois-suivant" class="bouton-navigation" aria-label="Mois suivant">&#9654;</button>
+      </div>
+
+      <!-- Grille jours -->
+      <div id="grille-jours-calendrier" role="grid" aria-label="Calendrier">
+        <!-- Généré dynamiquement -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       ZONE DE TOASTS (notifications)
+  ══════════════════════════════════════════════════ -->
+  <div id="zone-toast" role="status" aria-live="polite"></div>
+
+  <!-- ══════════════════════════════════════════════════
+       PIED DE PAGE
+  ══════════════════════════════════════════════════ -->
+  <footer id="pied-page" role="contentinfo">
+    <div>
+      Tachafaire &mdash; Auteur&nbsp;: <strong>Anthony</strong>
+      &mdash; Licence&nbsp;:
+      <abbr title="GNU General Public License">GPL</abbr>
+    </div>
+    <div>
+      <a href="https://forge.apps.education.fr/Anthony/tachafaire" target="_blank" rel="noopener">Code disponible sur la Forge Éducation</a>
+      &nbsp;&bull;&nbsp;
+      <a href="https://forge.apps.education.fr/Anthony/tachafaire/-/issues" target="_blank" rel="noopener">Pour rapporter un bug vous pouvez déposer un ticket</a>
+    </div>
+  </footer>
+
+  <!-- ══════════════════════════════════════════════════
+       SCRIPT JAVASCRIPT
+  ══════════════════════════════════════════════════ -->
+  <script>
+    /*
+    ╔══════════════════════════════════════════════════════════════════╗
+    ║                   SECTION 1 — PARAMÈTRES                         ║
+    ║  Modifiez ces variables pour personnaliser le comportement       ║
+    ║  de l'application sans toucher au reste du code.                ║
+    ╚══════════════════════════════════════════════════════════════════╝
+    */
+
+    // ── Amplitude horaire ──────────────────────────────────────────
+    // POUR CHANGER L'HEURE DE DÉBUT → modifier HEURE_DEBUT (0 à 23)
+    const HEURE_DEBUT = 6;    // Heure de début de la journée (6 = 6h00)
+    // POUR CHANGER L'HEURE DE FIN → modifier HEURE_FIN (0 à 23)
+    const HEURE_FIN   = 23;   // Heure de fin de la journée (23 = 23h00)
+    // Nombre total de créneaux de 30 min = (HEURE_FIN - HEURE_DEBUT) * 2
+    const NB_CRENEAUX = (HEURE_FIN - HEURE_DEBUT) * 2;
+
+    // ── Clé de stockage localStorage ──────────────────────────────
+    // POUR CHANGER LE NOM DU STOCKAGE (éviter conflits) → modifier ici
+    const CLE_STOCKAGE = 'tachafaire_taches_v1';
+
+    // ── Couleurs disponibles pour les tâches ──────────────────────
+    // POUR AJOUTER/SUPPRIMER DES COULEURS → modifier ce tableau
+    // Chaque élément : { valeur: '#rrggbb', etiquette: 'Nom affiché' }
+    const COULEURS_TACHES = [
+      { valeur: '#f9e4b0', etiquette: 'Jaune paille' },
+      { valeur: '#f4c2a1', etiquette: 'Abricot' },
+      { valeur: '#f0a0a0', etiquette: 'Rose poudre' },
+      { valeur: '#b8d9b8', etiquette: 'Sauge' },
+      { valeur: '#a8c8e8', etiquette: 'Bleu ciel' },
+      { valeur: '#c8b8e8', etiquette: 'Lavande' },
+      { valeur: '#d4b896', etiquette: 'Café au lait' },
+      { valeur: '#e8d4a0', etiquette: 'Blé' },
+      { valeur: '#a8d8c8', etiquette: 'Menthe' },
+      { valeur: '#e8b8c8', etiquette: 'Pétale' },
+      { valeur: '#c8d8a0', etiquette: 'Pistache' },
+      { valeur: '#b8c8d8', etiquette: 'Ardoise' },
+    ];
+
+    // ── Couleur sélectionnée par défaut ───────────────────────────
+    // POUR CHANGER LA COULEUR PAR DÉFAUT → modifier l'index (0 = première)
+    const INDEX_COULEUR_DEFAUT = 0;
+
+    // ── Noms des jours et mois en français ────────────────────────
+    // POUR TRADUIRE DANS UNE AUTRE LANGUE → modifier ces tableaux
+    const NOMS_JOURS = [
+      'dimanche', 'lundi', 'mardi', 'mercredi',
+      'jeudi', 'vendredi', 'samedi'
+    ];
+    const NOMS_JOURS_COURTS = ['Di', 'Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa'];
+    const NOMS_MOIS = [
+      'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+      'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'
+    ];
+
+
+    /*
+    ╔══════════════════════════════════════════════════════════════════╗
+    ║              SECTION 2 — RÉFÉRENCES DOM (centralisées)           ║
+    ║  Tous les getElementById sont ici. Ne les appelez pas dans       ║
+    ║  les fonctions pour garder le code lisible et performant.        ║
+    ╚══════════════════════════════════════════════════════════════════╝
+    */
+    const dom = {
+      // Navigation principale
+      affichageDate          : document.getElementById('affichage-date'),
+      boutonJourPrecedent    : document.getElementById('bouton-jour-precedent'),
+      boutonJourSuivant      : document.getElementById('bouton-jour-suivant'),
+      boutonCalendrier       : document.getElementById('bouton-calendrier'),
+      boutonEffacerTout      : document.getElementById('bouton-effacer-tout'),
+
+      // Planning
+      colonneHeures          : document.getElementById('colonne-heures'),
+      zonePlanning           : document.getElementById('zone-planning'),
+
+      // Modal tâche
+      modalTache             : document.getElementById('modal-tache'),
+      titreModalTache        : document.getElementById('titre-modal-tache'),
+      recapitulatifHoraire   : document.getElementById('recapitulatif-horaire'),
+      champTitreTache        : document.getElementById('champ-titre-tache'),
+      grilleCouleurs         : document.getElementById('grille-couleurs'),
+      boutonFermerModalTache : document.getElementById('bouton-fermer-modal-tache'),
+      boutonAnnulerTache     : document.getElementById('bouton-annuler-tache'),
+      boutonValiderTache     : document.getElementById('bouton-valider-tache'),
+
+      // Modal calendrier
+      modalCalendrier              : document.getElementById('modal-calendrier'),
+      boutonFermerModalCalendrier  : document.getElementById('bouton-fermer-modal-calendrier'),
+      boutonMoisPrecedent          : document.getElementById('bouton-mois-precedent'),
+      boutonMoisSuivant            : document.getElementById('bouton-mois-suivant'),
+      moisAnneeCalendrier          : document.getElementById('mois-annee-calendrier'),
+      grilleJoursCalendrier        : document.getElementById('grille-jours-calendrier'),
+
+      // Notifications
+      zoneToast              : document.getElementById('zone-toast'),
+    };
+
+    /*
+    ╔══════════════════════════════════════════════════════════════════╗
+    ║              SECTION 3 — ÉTAT DE L'APPLICATION                   ║
+    ║  Variables d'état global. Ne les modifiez pas directement ;      ║
+    ║  passez par les fonctions prévues à cet effet.                   ║
+    ╚══════════════════════════════════════════════════════════════════╝
+    */
+
+    // Date actuellement affichée (objet Date JavaScript)
+    let dateActive = new Date();
+
+    // Toutes les tâches, chargées depuis localStorage
+    // Structure : { 'YYYY-MM-DD': [ { id, titre, couleur, debut, fin }, ... ], ... }
+    let toutesLesTaches = {};
+
+    // État de la sélection en cours (drag ou clic début/fin)
+    let selectionEnCours = {
+      active       : false,   // true si une sélection est en cours
+      indexDebut   : null,    // index du créneau de départ
+      indexFin     : null,    // index du créneau de fin (mis à jour au survol)
+      modeSouris   : false,   // true si c'est un drag souris
+    };
+
+    // Couleur sélectionnée dans le modal
+    let couleurSelectionnee = COULEURS_TACHES[INDEX_COULEUR_DEFAUT].valeur;
+
+    // Mois affiché dans le calendrier (pour la navigation mois)
+    let moisCalendrier = new Date();
+
+    // Référence à la tâche en cours d'édition (null si nouvelle tâche)
+    let idTacheEnEdition = null;
+
+
+    /*
+    ╔══════════════════════════════════════════════════════════════════╗
+    ║              SECTION 4 — UTILITAIRES                             ║
+    ╚══════════════════════════════════════════════════════════════════╝
+    */
+
+    /**
+     * Formate une date en chaîne YYYY-MM-DD (clé de stockage).
+     * Ex : new Date(2026,4,13) → "2026-05-13"
+     * @param {Date} date - L'objet Date à formater
+     * @returns {string} La date au format ISO court
+     */
+    function formaterCleDate(date) {
+      // Récupère année, mois (0-indexé → +1) et jour
+      const annee = date.getFullYear();
+      const mois  = String(date.getMonth() + 1).padStart(2, '0'); // padStart : ajoute un 0 si nécessaire
+      const jour  = String(date.getDate()).padStart(2, '0');
+      return `${annee}-${mois}-${jour}`;
+    }
+
+    /**
+     * Formate une date en texte lisible en français.
+     * Ex : "mercredi 13 mai 2026"
+     * @param {Date} date - L'objet Date à afficher
+     * @returns {string} La date en toutes lettres
+     */
+    function formaterDateLisible(date) {
+      const nomJour   = NOMS_JOURS[date.getDay()];
+      const numJour   = date.getDate();
+      const nomMois   = NOMS_MOIS[date.getMonth()];
+      const annee     = date.getFullYear();
+      return `${nomJour} ${numJour} ${nomMois} ${annee}`;
+    }
+
+    /**
+     * Convertit un index de créneau (0-based) en texte horaire.
+     * Ex : index 0 → "6:00", index 1 → "6:30", index 4 → "8:00"
+     * @param {number} index - Index du créneau (0 = première demi-heure)
+     * @returns {string} L'heure au format "H:MM"
+     */
+    function indexVersHeure(index) {
+      // Calcule les minutes totales depuis le début
+      const minutesTotales = (HEURE_DEBUT * 60) + (index * 30);
+      const heures  = Math.floor(minutesTotales / 60);
+      const minutes = minutesTotales % 60;
+      return `${heures}:${String(minutes).padStart(2, '0')}`;
+    }
+
+    /**
+     * Génère un identifiant unique pour chaque tâche.
+     * Utilise le timestamp + un nombre aléatoire pour éviter les collisions.
+     * @returns {string} Un identifiant unique
+     */
+    function genererIdentifiant() {
+      return `tache_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+    }
+
+    /**
+     * Affiche une notification toast temporaire en bas de l'écran.
+     * Le toast disparaît automatiquement après 2.5 secondes.
+     * @param {string} message - Le texte à afficher
+     */
+    function afficherToast(message) {
+      console.log(`[Toast] ${message}`);
+
+      // Crée l'élément toast
+      const toast = document.createElement('div');
+      toast.className   = 'toast';
+      toast.textContent = message;
+      dom.zoneToast.appendChild(toast);
+
+      // Supprime le toast après 2.5 secondes (animation CSS + nettoyage DOM)
+      setTimeout(() => {
+        // Vérifie que le toast est encore dans le DOM avant de le supprimer
+        if (toast.parentNode) {
+          toast.parentNode.removeChild(toast);
+        }
+      }, 2500);
+    }
+
+
+    /*
+    ╔══════════════════════════════════════════════════════════════════╗
+    ║              SECTION 5 — PERSISTANCE (localStorage)              ║
+    ╚══════════════════════════════════════════════════════════════════╝
+    */
+
+    /**
+     * Charge toutes les tâches depuis le localStorage.
+     * Si aucune donnée n'existe, retourne un objet vide.
+     * POUR EFFACER TOUTES LES DONNÉES : tachafaire.clearStorage() dans la console.
+     */
+    function chargerTachesDepuisStockage() {
+      console.log('[Stockage] Chargement des tâches depuis localStorage...');
+
+      try {
+        // Récupère la chaîne JSON stockée
+        const donneesBrutes = localStorage.getItem(CLE_STOCKAGE);
+
+        // Si rien n'est stocké, retourne un objet vide
+        if (!donneesBrutes) {
+          console.log('[Stockage] Aucune donnée trouvée, départ à zéro.');
+          return {};
+        }
+
+        // Parse le JSON et retourne l'objet
+        const donnees = JSON.parse(donneesBrutes);
+        console.log(`[Stockage] ${Object.keys(donnees).length} jour(s) chargé(s).`);
+        return donnees;
+
+      } catch (erreur) {
+        // En cas d'erreur (JSON corrompu, etc.), on repart de zéro
+        console.error('[Stockage] Erreur lors du chargement :', erreur);
+        return {};
+      }
+    }
+
+    /**
+     * Sauvegarde toutes les tâches dans le localStorage.
+     * Appelée après chaque modification (ajout, suppression).
+     */
+    function sauvegarderTaches() {
+      try {
+        // Sérialise l'objet en JSON et le stocke
+        localStorage.setItem(CLE_STOCKAGE, JSON.stringify(toutesLesTaches));
+        console.log('[Stockage] Tâches sauvegardées avec succès.');
+      } catch (erreur) {
+        // Peut échouer si le localStorage est plein ou désactivé
+        console.error('[Stockage] Erreur lors de la sauvegarde :', erreur);
+        afficherToast('⚠️ Impossible de sauvegarder. Vérifiez les paramètres du navigateur.');
+      }
+    }
+
+    /**
+     * Retourne les tâches pour la date active (tableau, jamais undefined).
+     * @returns {Array} Tableau des tâches du jour
+     */
+    function obtenirTachesDuJour() {
+      const cle = formaterCleDate(dateActive);
+      // Si aucune tâche pour ce jour, retourne un tableau vide
+      return toutesLesTaches[cle] || [];
+    }
+
+    /**
+     * Remplace les tâches du jour courant par un nouveau tableau.
+     * @param {Array} taches - Le nouveau tableau de tâches
+     */
+    function enregistrerTachesDuJour(taches) {
+      const cle = formaterCleDate(dateActive);
+      toutesLesTaches[cle] = taches;
+      sauvegarderTaches();
+    }
+
+
+    /*
+    ╔══════════════════════════════════════════════════════════════════╗
+    ║              SECTION 6 — CONSTRUCTION DU PLANNING                ║
+    ╚══════════════════════════════════════════════════════════════════╝
+    */
+
+    /**
+     * Construit la colonne des heures (gauche) et la grille des créneaux (droite).
+     * Appelée une seule fois au chargement de la page.
+     */
+    function construirePlanning() {
+      console.log(`[Planning] Construction de la grille (${NB_CRENEAUX} créneaux)...`);
+
+      // Vide les conteneurs au cas où on reconstruit
+      dom.colonneHeures.innerHTML = '';
+      dom.zonePlanning.innerHTML  = '';
+
+      // Boucle sur chaque créneau de 30 minutes
+      for (let i = 0; i < NB_CRENEAUX; i++) {
+        const minutesTotales = (HEURE_DEBUT * 60) + (i * 30);
+        const minutes        = minutesTotales % 60;
+        const estHeurePleine = (minutes === 0);   // true si c'est une heure ronde (hh:00)
+
+        // ── Cellule heure (colonne gauche) ──
+        const celluleHeure = document.createElement('div');
+        celluleHeure.className = `cellule-heure ${estHeurePleine ? 'heure-pleine' : 'heure-demie'}`;
+        celluleHeure.setAttribute('aria-hidden', 'true'); // Décoratif pour les lecteurs d'écran
+        // Affiche "8:00" pour heure pleine, ":30" pour demi-heure
+        celluleHeure.textContent = estHeurePleine
+          ? indexVersHeure(i)
+          : '· · ·';
+        dom.colonneHeures.appendChild(celluleHeure);
+
+        // ── Créneau cliquable (colonne droite) ──
+        const creneau = document.createElement('div');
+        creneau.className = `creneau ${estHeurePleine ? 'heure-pleine' : ''}`;
+        creneau.dataset.index = i;   // Stocke l'index pour les événements
+        creneau.setAttribute('role', 'gridcell');
+        creneau.setAttribute('aria-label', `Créneau ${indexVersHeure(i)}`);
+        dom.zonePlanning.appendChild(creneau);
+      }
+
+      // Attache les événements de sélection sur la zone planning
+      attacherEvenementsSelection();
+
+      console.log('[Planning] Grille construite.');
+    }
+
+    /**
+     * Met à jour l'affichage de la date dans la barre de navigation.
+     */
+    function mettreAJourAffichageDate() {
+      dom.affichageDate.textContent = formaterDateLisible(dateActive);
+      console.log(`[Navigation] Affichage de la date : ${formaterDateLisible(dateActive)}`);
+    }
+
+    /**
+     * Rafraîchit entièrement l'affichage des tâches sur le planning.
+     * Supprime tous les blocs existants et les recrée depuis les données.
+     */
+    function rafraichirTaches() {
+      console.log('[Planning] Rafraîchissement des tâches...');
+
+      // Supprime tous les blocs de tâches existants (mais pas les créneaux)
+      const blocsExistants = dom.zonePlanning.querySelectorAll('.bloc-tache');
+      blocsExistants.forEach(bloc => bloc.remove());
+
+      // Récupère les tâches du jour
+      const taches = obtenirTachesDuJour();
+      console.log(`[Planning] ${taches.length} tâche(s) à afficher.`);
+
+      // Crée un bloc visuel pour chaque tâche
+      taches.forEach(tache => {
+        creerBlocTache(tache);
+      });
+    }
+
+    /**
+     * Crée et insère un bloc visuel pour une tâche donnée.
+     * Positionne le bloc en absolu selon les créneaux de début et de fin.
+     * @param {Object} tache - { id, titre, couleur, debut, fin }
+     */
+    function creerBlocTache(tache) {
+      // Calcule la position et la hauteur en pixels
+      // CSS var --hauteur-creneau est en pixels, on la lit depuis le style calculé
+      const hauteurCreneau = parseInt(
+        getComputedStyle(document.documentElement)
+          .getPropertyValue('--hauteur-creneau')
+      );
+
+      // Position du haut : index de début × hauteur d'un créneau
+      const positionHaut  = tache.debut * hauteurCreneau;
+      // Nombre de créneaux occupés
+      const nbCreneaux    = tache.fin - tache.debut + 1;
+      // Hauteur totale du bloc
+      const hauteurBloc   = nbCreneaux * hauteurCreneau;
+
+      // Crée l'élément div
+      const bloc = document.createElement('div');
+      bloc.className        = 'bloc-tache';
+      bloc.dataset.id       = tache.id;
+      bloc.style.top        = `${positionHaut}px`;
+      bloc.style.height     = `${hauteurBloc}px`;
+      bloc.style.background = tache.couleur;
+      // Couleur de texte automatique (noir ou blanc selon la luminosité)
+      bloc.style.color      = couleurTexteSurFond(tache.couleur);
+
+      // Durée en minutes
+      const dureeMin = nbCreneaux * 30;
+      const heures   = Math.floor(dureeMin / 60);
+      const minutes  = dureeMin % 60;
+      const dureeTexte = heures > 0
+        ? `${heures}h${minutes > 0 ? minutes : ''}`
+        : `${minutes}min`;
+
+      // Contenu du bloc
+      bloc.innerHTML = `
+        <span class="titre-tache">${echapperHTML(tache.titre)}</span>
+        <span class="duree-tache">${indexVersHeure(tache.debut)} – ${indexVersHeure(tache.fin + 1)} (${dureeTexte})</span>
+        <button class="bouton-suppr-tache" data-id="${tache.id}" title="Supprimer cette tâche" aria-label="Supprimer ${echapperHTML(tache.titre)}">×</button>
+      `;
+
+      // Clic sur le bloc → édition (pas sur le bouton suppr)
+      bloc.addEventListener('click', (e) => {
+        // Ignore le clic si c'est sur le bouton de suppression
+        if (e.target.classList.contains('bouton-suppr-tache')) return;
+        console.log(`[Planning] Clic sur la tâche "${tache.titre}" (id: ${tache.id})`);
+        ouvrirModalEditionTache(tache.id);
+      });
+
+      // Clic sur le bouton suppression
+      const boutonSuppr = bloc.querySelector('.bouton-suppr-tache');
+      boutonSuppr.addEventListener('click', (e) => {
+        e.stopPropagation(); // Empêche le clic de remonter au bloc (évite l'édition)
+        supprimerTache(tache.id);
+      });
+
+      dom.zonePlanning.appendChild(bloc);
+    }
+
+    /**
+     * Calcule une couleur de texte (noir ou blanc) adaptée au fond.
+     * Utilise la formule de luminance relative WCAG.
+     * @param {string} couleurHex - Couleur hexadécimale (#rrggbb)
+     * @returns {string} '#000000' ou '#ffffff'
+     */
+    function couleurTexteSurFond(couleurHex) {
+      // Extrait les composantes R, G, B
+      const r = parseInt(couleurHex.slice(1, 3), 16);
+      const g = parseInt(couleurHex.slice(3, 5), 16);
+      const b = parseInt(couleurHex.slice(5, 7), 16);
+      // Formule de luminance perceptuelle
+      const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+      // Si luminance > 0.55 → fond clair → texte sombre
+      return luminance > 0.55 ? '#2c1a0e' : '#ffffff';
+    }
+
+    /**
+     * Échappe les caractères HTML spéciaux pour éviter les injections XSS.
+     * @param {string} texte - Texte brut à sécuriser
+     * @returns {string} Texte sécurisé
+     */
+    function echapperHTML(texte) {
+      const div = document.createElement('div');
+      div.appendChild(document.createTextNode(texte));
+      return div.innerHTML;
+    }
+
+
+    /*
+    ╔══════════════════════════════════════════════════════════════════╗
+    ║              SECTION 7 — SÉLECTION DES CRÉNEAUX                  ║
+    ║  Gère le clic-début/fin ET le cliquer-glisser                    ║
+    ╚══════════════════════════════════════════════════════════════════╝
+    */
+
+    /**
+     * Attache tous les événements de sélection sur la zone planning.
+     * Gère deux modes : cliquer-glisser (souris/touch) et clic début + clic fin.
+     */
+    function attacherEvenementsSelection() {
+      // ── MODE 1 : CLIQUER-GLISSER ──────────────────────────────────
+
+      // Début du drag (mousedown sur un créneau)
+      dom.zonePlanning.addEventListener('mousedown', (e) => {
+        const creneau = e.target.closest('.creneau');
+        // Si on clique sur un créneau vide (pas sur un bloc de tâche)
+        if (!creneau) return;
+
+        const index = parseInt(creneau.dataset.index);
+        console.log(`[Sélection] Début drag au créneau ${index} (${indexVersHeure(index)})`);
+
+        selectionEnCours.active     = true;
+        selectionEnCours.indexDebut = index;
+        selectionEnCours.indexFin   = index;
+        selectionEnCours.modeSouris = true;
+
+        mettreAJourVisualisationSelection();
+        e.preventDefault(); // Empêche la sélection de texte
+      });
+
+      // Survol pendant le drag (mousemove)
+      dom.zonePlanning.addEventListener('mousemove', (e) => {
+        // N'agit que si le drag est actif
+        if (!selectionEnCours.active || !selectionEnCours.modeSouris) return;
+
+        const creneau = e.target.closest('.creneau');
+        if (!creneau) return;
+
+        const index = parseInt(creneau.dataset.index);
+        // Met à jour la fin seulement si l'index a changé
+        if (index !== selectionEnCours.indexFin) {
+          selectionEnCours.indexFin = index;
+          mettreAJourVisualisationSelection();
+        }
+      });
+
+      // Fin du drag (mouseup n'importe où dans le document)
+      document.addEventListener('mouseup', () => {
+        if (!selectionEnCours.active || !selectionEnCours.modeSouris) return;
+
+        console.log(`[Sélection] Fin drag : ${indexVersHeure(Math.min(selectionEnCours.indexDebut, selectionEnCours.indexFin))} → ${indexVersHeure(Math.max(selectionEnCours.indexDebut, selectionEnCours.indexFin) + 1)}`);
+
+        selectionEnCours.modeSouris = false;
+        ouvrirModalNouvelleSelectionSiValide();
+      });
+
+      // ── SUPPORT TACTILE (touch) ────────────────────────────────────
+
+      // Début du toucher
+      dom.zonePlanning.addEventListener('touchstart', (e) => {
+        const creneau = e.target.closest('.creneau');
+        if (!creneau) return;
+
+        const index = parseInt(creneau.dataset.index);
+        console.log(`[Sélection Touch] Début au créneau ${index}`);
+
+        selectionEnCours.active     = true;
+        selectionEnCours.indexDebut = index;
+        selectionEnCours.indexFin   = index;
+        selectionEnCours.modeSouris = false;
+
+        mettreAJourVisualisationSelection();
+      }, { passive: true });
+
+      // Glissement du doigt
+      dom.zonePlanning.addEventListener('touchmove', (e) => {
+        if (!selectionEnCours.active) return;
+
+        // Récupère la position du doigt
+        const touch     = e.touches[0];
+        const element   = document.elementFromPoint(touch.clientX, touch.clientY);
+        const creneau   = element ? element.closest('.creneau') : null;
+
+        if (creneau) {
+          const index = parseInt(creneau.dataset.index);
+          if (index !== selectionEnCours.indexFin) {
+            selectionEnCours.indexFin = index;
+            mettreAJourVisualisationSelection();
+          }
+        }
+      }, { passive: true });
+
+      // Fin du toucher
+      dom.zonePlanning.addEventListener('touchend', () => {
+        if (!selectionEnCours.active) return;
+        console.log('[Sélection Touch] Fin du geste');
+        ouvrirModalNouvelleSelectionSiValide();
+      });
+
+      // ── MODE 2 : CLIC DÉBUT + CLIC FIN ───────────────────────────
+      // Ce mode est activé si la sélection n'est pas déjà active via drag.
+      dom.zonePlanning.addEventListener('click', (e) => {
+        // Ignore les clics sur les blocs de tâche
+        if (e.target.closest('.bloc-tache')) return;
+
+        const creneau = e.target.closest('.creneau');
+        if (!creneau) return;
+
+        const index = parseInt(creneau.dataset.index);
+
+        // Si aucune sélection active → premier clic (début)
+        if (!selectionEnCours.active) {
+          console.log(`[Sélection Clic] Premier clic au créneau ${index}`);
+
+          selectionEnCours.active     = true;
+          selectionEnCours.indexDebut = index;
+          selectionEnCours.indexFin   = index;
+          selectionEnCours.modeSouris = false;
+          mettreAJourVisualisationSelection();
+          afficherToast('Cliquez sur le créneau de fin pour définir la durée');
+        } else if (!selectionEnCours.modeSouris) {
+          // Deuxième clic → fin de la sélection
+          console.log(`[Sélection Clic] Deuxième clic au créneau ${index}`);
+          selectionEnCours.indexFin = index;
+          mettreAJourVisualisationSelection();
+          ouvrirModalNouvelleSelectionSiValide();
+        }
+      });
+
+      // Touche Échap : annule la sélection en cours
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          if (selectionEnCours.active) {
+            annulerSelection();
+          }
+        }
+      });
+    }
+
+    /**
+     * Met à jour le style visuel des créneaux selon la sélection en cours.
+     * Colore les créneaux entre indexDebut et indexFin.
+     */
+    function mettreAJourVisualisationSelection() {
+      // Calcule les bornes min/max (le drag peut aller dans les deux sens)
+      const indexMin = Math.min(selectionEnCours.indexDebut, selectionEnCours.indexFin);
+      const indexMax = Math.max(selectionEnCours.indexDebut, selectionEnCours.indexFin);
+
+      // Parcourt tous les créneaux
+      const creneaux = dom.zonePlanning.querySelectorAll('.creneau');
+      creneaux.forEach((creneau) => {
+        const index = parseInt(creneau.dataset.index);
+        // Ajoute ou retire la classe 'en-selection' selon la plage
+        if (index >= indexMin && index <= indexMax) {
+          creneau.classList.add('en-selection');
+        } else {
+          creneau.classList.remove('en-selection');
+        }
+      });
+    }
+
+    /**
+     * Annule complètement la sélection en cours et nettoie l'affichage.
+     */
+    function annulerSelection() {
+      console.log('[Sélection] Annulation de la sélection.');
+      selectionEnCours.active     = false;
+      selectionEnCours.indexDebut = null;
+      selectionEnCours.indexFin   = null;
+      selectionEnCours.modeSouris = false;
+      // Retire la classe de sélection de tous les créneaux
+      dom.zonePlanning.querySelectorAll('.creneau.en-selection')
+        .forEach(c => c.classList.remove('en-selection'));
+    }
+
+    /**
+     * Si la sélection est valide (au moins un créneau), ouvre le modal de saisie.
+     * Sinon, annule la sélection.
+     */
+    function ouvrirModalNouvelleSelectionSiValide() {
+      if (!selectionEnCours.active) return;
+
+      const indexMin = Math.min(selectionEnCours.indexDebut, selectionEnCours.indexFin);
+      const indexMax = Math.max(selectionEnCours.indexDebut, selectionEnCours.indexFin);
+
+      // Désactive l'état de sélection (mais garde les classes CSS pour l'aperçu)
+      selectionEnCours.active     = false;
+      selectionEnCours.modeSouris = false;
+
+      // Ouvre le modal avec les créneaux sélectionnés
+      ouvrirModalTache(indexMin, indexMax, null);
+    }
+
+
+    /*
+    ╔══════════════════════════════════════════════════════════════════╗
+    ║              SECTION 8 — MODAL DE SAISIE DE TÂCHE                ║
+    ╚══════════════════════════════════════════════════════════════════╝
+    */
+
+    /**
+     * Ouvre le modal de saisie pour créer ou éditer une tâche.
+     * @param {number} debut - Index du créneau de début
+     * @param {number} fin   - Index du créneau de fin
+     * @param {string|null} idEdition - ID de la tâche à éditer, null si nouvelle
+     */
+    function ouvrirModalTache(debut, fin, idEdition) {
+      idTacheEnEdition = idEdition;
+
+      // Récapitulatif horaire
+      const heureDebut = indexVersHeure(debut);
+      const heureFin   = indexVersHeure(fin + 1);
+      const nbCreneaux = fin - debut + 1;
+      const dureeMin   = nbCreneaux * 30;
+      const heures     = Math.floor(dureeMin / 60);
+      const minutes    = dureeMin % 60;
+      const dureeTexte = heures > 0
+        ? `${heures}h${minutes > 0 ? String(minutes).padStart(2,'0') : ''}`
+        : `${minutes} min`;
+
+      dom.recapitulatifHoraire.textContent =
+        `🕐 ${heureDebut} → ${heureFin}  (${dureeTexte})`;
+
+      // Stocke les créneaux dans les dataset du bouton valider
+      dom.boutonValiderTache.dataset.debut = debut;
+      dom.boutonValiderTache.dataset.fin   = fin;
+
+      // Si édition : pré-remplit le titre et la couleur
+      if (idEdition !== null) {
+        dom.titreModalTache.textContent = 'Modifier la tâche';
+        const taches = obtenirTachesDuJour();
+        const tache  = taches.find(t => t.id === idEdition);
+        if (tache) {
+          dom.champTitreTache.value = tache.titre;
+          couleurSelectionnee        = tache.couleur;
+        }
+      } else {
+        dom.titreModalTache.textContent = 'Nouvelle tâche';
+        dom.champTitreTache.value       = '';
+        couleurSelectionnee = COULEURS_TACHES[INDEX_COULEUR_DEFAUT].valeur;
+      }
+
+      // Met à jour la sélection visuelle des pastilles de couleur
+      mettreAJourSelectionCouleur();
+
+      // Affiche le modal
+      dom.modalTache.classList.remove('cache');
+      // Focus sur le champ titre pour la saisie immédiate
+      setTimeout(() => dom.champTitreTache.focus(), 50);
+      console.log(`[Modal Tâche] Ouverture — créneaux ${debut} à ${fin}`);
+    }
+
+    /**
+     * Ouvre le modal en mode édition pour une tâche existante.
+     * @param {string} idTache - L'identifiant de la tâche à modifier
+     */
+    function ouvrirModalEditionTache(idTache) {
+      const taches = obtenirTachesDuJour();
+      const tache  = taches.find(t => t.id === idTache);
+      if (!tache) {
+        console.warn(`[Modal Tâche] Tâche introuvable : ${idTache}`);
+        return;
+      }
+      // Nettoie la sélection visuelle précédente
+      annulerSelection();
+      // Rouvre le modal avec les horaires de la tâche existante
+      ouvrirModalTache(tache.debut, tache.fin, idTache);
+    }
+
+    /**
+     * Ferme le modal de saisie et nettoie l'état.
+     */
+    function fermerModalTache() {
+      dom.modalTache.classList.add('cache');
+      dom.champTitreTache.value = '';
+      idTacheEnEdition          = null;
+      annulerSelection();
+      console.log('[Modal Tâche] Fermeture.');
+    }
+
+    /**
+     * Construit les pastilles de couleur dans le modal.
+     * Appelée une seule fois à l'initialisation.
+     */
+    function construirePalettesCouleurs() {
+      dom.grilleCouleurs.innerHTML = '';
+
+      // Parcourt le tableau des couleurs définies dans les paramètres
+      COULEURS_TACHES.forEach((couleur) => {
+        const pastille = document.createElement('button');
+        pastille.className              = 'pastille-couleur';
+        pastille.style.backgroundColor = couleur.valeur;
+        pastille.title                  = couleur.etiquette;
+        pastille.setAttribute('aria-label', couleur.etiquette);
+        pastille.dataset.couleur        = couleur.valeur;
+
+        // Marque la couleur par défaut comme sélectionnée
+        if (couleur.valeur === couleurSelectionnee) {
+          pastille.classList.add('selectionnee');
+        }
+
+        // Clic sur une pastille → change la couleur sélectionnée
+        pastille.addEventListener('click', () => {
+          couleurSelectionnee = couleur.valeur;
+          mettreAJourSelectionCouleur();
+          console.log(`[Couleur] Couleur sélectionnée : ${couleur.etiquette} (${couleur.valeur})`);
+        });
+
+        dom.grilleCouleurs.appendChild(pastille);
+      });
+    }
+
+    /**
+     * Met à jour visuellement la pastille sélectionnée.
+     */
+    function mettreAJourSelectionCouleur() {
+      dom.grilleCouleurs.querySelectorAll('.pastille-couleur').forEach((pastille) => {
+        // Ajoute la classe 'selectionnee' uniquement à la couleur active
+        if (pastille.dataset.couleur === couleurSelectionnee) {
+          pastille.classList.add('selectionnee');
+        } else {
+          pastille.classList.remove('selectionnee');
+        }
+      });
+    }
+
+    /**
+     * Valide et enregistre la tâche depuis le formulaire du modal.
+     * Appelée lors du clic sur "Enregistrer".
+     */
+    function validerTache() {
+      const titre = dom.champTitreTache.value.trim();
+
+      // Vérifie que le titre n'est pas vide
+      if (!titre) {
+        dom.champTitreTache.focus();
+        dom.champTitreTache.style.borderColor = 'var(--couleur-danger)';
+        setTimeout(() => {
+          dom.champTitreTache.style.borderColor = '';
+        }, 1500);
+        console.warn('[Tâche] Tentative de sauvegarde sans titre.');
+        return;
+      }
+
+      const debut = parseInt(dom.boutonValiderTache.dataset.debut);
+      const fin   = parseInt(dom.boutonValiderTache.dataset.fin);
+
+      const taches = obtenirTachesDuJour();
+
+      // Si édition → modifie la tâche existante
+      if (idTacheEnEdition !== null) {
+        const index = taches.findIndex(t => t.id === idTacheEnEdition);
+        if (index !== -1) {
+          taches[index].titre   = titre;
+          taches[index].couleur = couleurSelectionnee;
+          taches[index].debut   = debut;
+          taches[index].fin     = fin;
+          console.log(`[Tâche] Modification de "${titre}" (id: ${idTacheEnEdition})`);
+          afficherToast(`✏️ Tâche modifiée : "${titre}"`);
+        }
+      } else {
+        // Sinon → crée une nouvelle tâche
+        const nouvelleTache = {
+          id      : genererIdentifiant(),
+          titre   : titre,
+          couleur : couleurSelectionnee,
+          debut   : debut,
+          fin     : fin,
+        };
+        taches.push(nouvelleTache);
+        console.log(`[Tâche] Ajout de "${titre}" (créneaux ${debut} → ${fin})`);
+        afficherToast(`✅ Tâche ajoutée : "${titre}"`);
+      }
+
+      // Sauvegarde et rafraîchit l'affichage
+      enregistrerTachesDuJour(taches);
+      fermerModalTache();
+      rafraichirTaches();
+    }
+
+    /**
+     * Supprime une tâche par son identifiant.
+     * @param {string} id - L'identifiant de la tâche à supprimer
+     */
+    function supprimerTache(id) {
+      const taches    = obtenirTachesDuJour();
+      const tache     = taches.find(t => t.id === id);
+      const nouvelles = taches.filter(t => t.id !== id);  // Garde toutes sauf celle-ci
+      enregistrerTachesDuJour(nouvelles);
+      rafraichirTaches();
+      console.log(`[Tâche] Suppression de la tâche id: ${id}`);
+      if (tache) afficherToast(`🗑 Tâche supprimée : "${tache.titre}"`);
+    }
+
+    /**
+     * Efface toutes les tâches de la journée après confirmation.
+     */
+    function effacerToutesTachesDuJour() {
+      const taches = obtenirTachesDuJour();
+      // Si aucune tâche, informe l'utilisateur
+      if (taches.length === 0) {
+        afficherToast('Aucune tâche à effacer pour ce jour.');
+        return;
+      }
+
+      // Demande confirmation à l'utilisateur
+      const confirme = window.confirm(
+        `Effacer les ${taches.length} tâche(s) du ${formaterDateLisible(dateActive)} ?`
+      );
+
+      if (confirme) {
+        enregistrerTachesDuJour([]);
+        rafraichirTaches();
+        console.log(`[Tâche] Toutes les tâches du ${formaterCleDate(dateActive)} ont été effacées.`);
+        afficherToast('🗑 Toutes les tâches ont été effacées.');
+      }
+    }
+
+
+    /*
+    ╔══════════════════════════════════════════════════════════════════╗
+    ║              SECTION 9 — CALENDRIER                              ║
+    ╚══════════════════════════════════════════════════════════════════╝
+    */
+
+    /**
+     * Ouvre le modal du calendrier et synchronise le mois affiché.
+     */
+    function ouvrirCalendrier() {
+      // Le calendrier s'ouvre sur le mois de la date active
+      moisCalendrier = new Date(dateActive.getFullYear(), dateActive.getMonth(), 1);
+      rendreCalendrier();
+      dom.modalCalendrier.classList.remove('cache');
+      console.log('[Calendrier] Ouverture.');
+    }
+
+    /**
+     * Ferme le modal du calendrier.
+     */
+    function fermerCalendrier() {
+      dom.modalCalendrier.classList.add('cache');
+      console.log('[Calendrier] Fermeture.');
+    }
+
+    /**
+     * Génère et affiche la grille du calendrier pour le mois courant.
+     */
+    function rendreCalendrier() {
+      const annee = moisCalendrier.getFullYear();
+      const mois  = moisCalendrier.getMonth();
+
+      // Met à jour le titre du mois
+      dom.moisAnneeCalendrier.textContent =
+        `${NOMS_MOIS[mois]} ${annee}`;
+
+      // Vide la grille
+      dom.grilleJoursCalendrier.innerHTML = '';
+
+      // ── En-têtes des jours de la semaine ──
+      // Lundi en premier (adapté au contexte français)
+      // POUR COMMENCER LA SEMAINE LE DIMANCHE → changer l'ordre ci-dessous
+      const ordreJours = [1, 2, 3, 4, 5, 6, 0]; // 0=Dim, 1=Lun, ..., 6=Sam
+
+      ordreJours.forEach((indexJour) => {
+        const entete = document.createElement('div');
+        entete.className   = 'entete-jour-semaine';
+        entete.textContent = NOMS_JOURS_COURTS[indexJour];
+        dom.grilleJoursCalendrier.appendChild(entete);
+      });
+
+      // ── Calcul du premier jour du mois ──
+      const premierJour     = new Date(annee, mois, 1);
+      const dernierJour     = new Date(annee, mois + 1, 0); // Dernier jour du mois
+      const jourSemainePremier = premierJour.getDay(); // 0=Dim, 1=Lun...
+
+      // Décalage pour commencer la grille au lundi
+      // Transforme : Dim(0)→6, Lun(1)→0, Mar(2)→1, ...
+      const decalage = (jourSemainePremier + 6) % 7;
+
+      // Ajoute des cellules vides avant le 1er du mois
+      for (let i = 0; i < decalage; i++) {
+        const vide = document.createElement('div');
+        vide.className = 'cellule-calendrier vide';
+        dom.grilleJoursCalendrier.appendChild(vide);
+      }
+
+      // Date d'aujourd'hui (pour la mise en surbrillance)
+      const aujourdhui  = new Date();
+      const cleDateActive = formaterCleDate(dateActive);
+
+      // Ajoute une cellule pour chaque jour du mois
+      for (let jour = 1; jour <= dernierJour.getDate(); jour++) {
+        const dateJour  = new Date(annee, mois, jour);
+        const cleJour   = formaterCleDate(dateJour);
+
+        const cellule = document.createElement('div');
+        cellule.className   = 'cellule-calendrier';
+        cellule.textContent = jour;
+
+        // Met en surbrillance aujourd'hui
+        if (cleJour === formaterCleDate(aujourdhui)) {
+          cellule.classList.add('aujourd-hui');
+        }
+
+        // Met en surbrillance le jour actuellement affiché
+        if (cleJour === cleDateActive) {
+          cellule.classList.add('jour-selectionne');
+        }
+
+        // Clic sur un jour → navigue vers ce jour
+        cellule.addEventListener('click', () => {
+          console.log(`[Calendrier] Sélection du ${formaterDateLisible(dateJour)}`);
+          allerAuJour(dateJour);
+          fermerCalendrier();
+        });
+
+        dom.grilleJoursCalendrier.appendChild(cellule);
+      }
+    }
+
+
+    /*
+    ╔══════════════════════════════════════════════════════════════════╗
+    ║              SECTION 10 — NAVIGATION (dates)                     ║
+    ╚══════════════════════════════════════════════════════════════════╝
+    */
+
+    /**
+     * Navigue vers un jour spécifique.
+     * @param {Date} nouvelleDate - La date vers laquelle naviguer
+     */
+    function allerAuJour(nouvelleDate) {
+      dateActive = new Date(nouvelleDate);
+      mettreAJourAffichageDate();
+      rafraichirTaches();
+      console.log(`[Navigation] Jour actif : ${formaterDateLisible(dateActive)}`);
+    }
+
+    /**
+     * Navigue vers le jour précédent.
+     */
+    function allerJourPrecedent() {
+      const nouvelleDate = new Date(dateActive);
+      nouvelleDate.setDate(nouvelleDate.getDate() - 1); // Soustrait 1 jour
+      allerAuJour(nouvelleDate);
+    }
+
+    /**
+     * Navigue vers le jour suivant.
+     */
+    function allerJourSuivant() {
+      const nouvelleDate = new Date(dateActive);
+      nouvelleDate.setDate(nouvelleDate.getDate() + 1); // Ajoute 1 jour
+      allerAuJour(nouvelleDate);
+    }
+
+    /**
+     * Navigue vers le mois précédent dans le calendrier.
+     */
+    function allerMoisPrecedentCalendrier() {
+      moisCalendrier.setMonth(moisCalendrier.getMonth() - 1);
+      rendreCalendrier();
+    }
+
+    /**
+     * Navigue vers le mois suivant dans le calendrier.
+     */
+    function allerMoisSuivantCalendrier() {
+      moisCalendrier.setMonth(moisCalendrier.getMonth() + 1);
+      rendreCalendrier();
+    }
+
+
+    /*
+    ╔══════════════════════════════════════════════════════════════════╗
+    ║              SECTION 11 — ATTACHEMENT DES ÉVÉNEMENTS             ║
+    ╚══════════════════════════════════════════════════════════════════╝
+    */
+
+    /**
+     * Attache tous les écouteurs d'événements sur les boutons de l'interface.
+     * Centralise la gestion des événements pour une meilleure lisibilité.
+     */
+    function attacherEvenementsInterface() {
+      // ── Navigation dates ──
+      dom.boutonJourPrecedent.addEventListener('click', allerJourPrecedent);
+      dom.boutonJourSuivant.addEventListener('click', allerJourSuivant);
+
+      // ── Calendrier ──
+      dom.boutonCalendrier.addEventListener('click', ouvrirCalendrier);
+      dom.boutonFermerModalCalendrier.addEventListener('click', fermerCalendrier);
+      dom.boutonMoisPrecedent.addEventListener('click', allerMoisPrecedentCalendrier);
+      dom.boutonMoisSuivant.addEventListener('click', allerMoisSuivantCalendrier);
+
+      // ── Effacer tout ──
+      dom.boutonEffacerTout.addEventListener('click', effacerToutesTachesDuJour);
+
+      // ── Modal tâche ──
+      dom.boutonFermerModalTache.addEventListener('click', fermerModalTache);
+      dom.boutonAnnulerTache.addEventListener('click', fermerModalTache);
+      dom.boutonValiderTache.addEventListener('click', validerTache);
+
+      // Validation par la touche Entrée dans le champ titre
+      dom.champTitreTache.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          validerTache();
+        }
+      });
+
+      // Fermer les modales en cliquant sur le fond semi-transparent
+      dom.modalTache.addEventListener('click', (e) => {
+        // Ferme uniquement si le clic est sur le fond (pas sur le contenu)
+        if (e.target === dom.modalTache) {
+          fermerModalTache();
+        }
+      });
+
+      dom.modalCalendrier.addEventListener('click', (e) => {
+        if (e.target === dom.modalCalendrier) {
+          fermerCalendrier();
+        }
+      });
+
+      // Navigation clavier (flèches gauche/droite)
+      document.addEventListener('keydown', (e) => {
+        // Ignore si un champ texte est actif
+        if (document.activeElement.tagName === 'INPUT') return;
+        // Ignore si une modale est ouverte
+        if (!dom.modalTache.classList.contains('cache')) return;
+        if (!dom.modalCalendrier.classList.contains('cache')) return;
+
+        // Flèche gauche → jour précédent
+        if (e.key === 'ArrowLeft') allerJourPrecedent();
+        // Flèche droite → jour suivant
+        if (e.key === 'ArrowRight') allerJourSuivant();
+      });
+
+      console.log('[Interface] Tous les événements ont été attachés.');
+    }
+
+
+    /*
+    ╔══════════════════════════════════════════════════════════════════╗
+    ║              SECTION 12 — INITIALISATION                         ║
+    ╚══════════════════════════════════════════════════════════════════╝
+    */
+
+    /**
+     * Point d'entrée principal de l'application.
+     * Appelée une seule fois au chargement de la page.
+     * ORDRE D'INITIALISATION :
+     *   1. Charge les données depuis localStorage
+     *   2. Construit la grille du planning
+     *   3. Construit la palette de couleurs
+     *   4. Affiche la date du jour
+     *   5. Affiche les tâches du jour
+     *   6. Attache les événements
+     */
+    function initialiserApplication() {
+      console.log('═══════════════════════════════════════════');
+      console.log('  TACHAFAIRE — Démarrage de l\'application  ');
+      console.log('═══════════════════════════════════════════');
+
+      // 1. Chargement des données persistantes
+      toutesLesTaches = chargerTachesDepuisStockage();
+
+      // 2. Construction de la grille planning (colonnes heures + créneaux)
+      construirePlanning();
+
+      // 3. Construction de la palette de couleurs dans le modal
+      construirePalettesCouleurs();
+
+      // 4. Affichage de la date active (aujourd'hui par défaut)
+      mettreAJourAffichageDate();
+
+      // 5. Affichage des tâches existantes
+      rafraichirTaches();
+
+      // 6. Attachement de tous les écouteurs d'événements
+      attacherEvenementsInterface();
+
+      console.log('✔ Application prête.');
+      console.log('══════════════════════════════════════════');
+      console.log('  AIDE AU DÉBOGAGE :');
+      console.log('  • tachafaire.voirTaches()       → affiche les tâches du jour');
+      console.log('  • tachafaire.clearStorage()     → efface TOUTES les données');
+      console.log('  • tachafaire.exporterDonnees()  → affiche le JSON complet');
+      console.log('══════════════════════════════════════════');
+    }
+
+    /*
+    ── Utilitaires de débogage accessibles depuis la console du navigateur ──
+    USAGE : tachafaire.voirTaches() dans la console
+    */
+    window.tachafaire = {
+      /**
+       * Affiche les tâches du jour courant dans la console.
+       */
+      voirTaches: () => {
+        console.table(obtenirTachesDuJour());
+      },
+
+      /**
+       * ⚠️  DANGER : efface TOUTES les données de localStorage.
+       * Usage : tachafaire.clearStorage()
+       */
+      clearStorage: () => {
+        if (window.confirm('⚠️ Effacer TOUTES les données Tachafaire ?')) {
+          localStorage.removeItem(CLE_STOCKAGE);
+          toutesLesTaches = {};
+          rafraichirTaches();
+          console.warn('[Stockage] Toutes les données ont été effacées.');
+        }
+      },
+
+      /**
+       * Affiche le JSON complet des tâches dans la console.
+       */
+      exporterDonnees: () => {
+        console.log(JSON.stringify(toutesLesTaches, null, 2));
+      },
+    };
+
+    // ── Lance l'application dès que le DOM est prêt ──
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initialiserApplication);
+    } else {
+      // Le DOM est déjà prêt (script en bas de page)
+      initialiserApplication();
+    }
+
+  </script>
+</body>
+</html>
